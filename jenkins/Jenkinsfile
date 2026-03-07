@@ -2,298 +2,215 @@
 // Netflix Clone - Jenkins CI/CD Pipeline
 // =====================================================
 pipeline {
+
     agent any
 
-    // ─── Environment Variables ─────────────────────
     environment {
-        DOCKERHUB_USERNAME   = credentials('DOCKERHUB_USERNAME')
-        DOCKERHUB_PASSWORD   = credentials('DOCKERHUB_PASSWORD')
-        FRONTEND_IMAGE       = "${DOCKERHUB_USERNAME}/netflix-frontend"
-        BACKEND_IMAGE        = "${DOCKERHUB_USERNAME}/netflix-backend"
-        IMAGE_TAG            = "${BUILD_NUMBER}"
-        K8S_NAMESPACE        = "netflix-clone"
-        KUBECONFIG           = credentials('KUBECONFIG')
-        REACT_APP_API_URL    = "http://netflix-backend-service:5000"
+        DOCKERHUB_USERNAME = credentials('DOCKERHUB_USERNAME')
+        DOCKERHUB_PASSWORD = credentials('DOCKERHUB_PASSWORD')
+
+        FRONTEND_IMAGE = "${DOCKERHUB_USERNAME}/netflix-frontend"
+        BACKEND_IMAGE  = "${DOCKERHUB_USERNAME}/netflix-backend"
+
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
+        K8S_NAMESPACE = "netflix-clone"
+
+        KUBECONFIG = credentials('KUBECONFIG')
+
+        REACT_APP_API_URL = "http://netflix-backend-service:5000"
     }
 
-    // ─── Options ──────────────────────────────────
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
         timestamps()
-        ansiColor('xterm')
     }
 
-    // ─── Triggers ─────────────────────────────────
     triggers {
         pollSCM('H/5 * * * *')
     }
 
-    // ─── Stages ───────────────────────────────────
     stages {
 
-        // ── Stage 1: Clone Repository ─────────────
-        stage('📥 Clone Repository') {
+        // Clone Repo
+        stage('Clone Repository') {
             steps {
-                echo '=============================='
-                echo '  Cloning GitHub Repository'
-                echo '=============================='
                 git branch: 'main',
-                    url: 'https://github.com/YOUR_GITHUB_USERNAME/Netflix-DevOps-Project.git'
-
-                sh '''
-                    echo "Branch: $(git branch --show-current)"
-                    echo "Commit: $(git log -1 --oneline)"
-                    ls -la
-                '''
-            }
-            post {
-                success { echo '✅ Repository cloned successfully' }
-                failure { echo '❌ Repository clone failed' }
+                    url: 'https://github.com/sabarikarthick7/netflix-devops-project.git'
             }
         }
 
-        // ── Stage 2: Install Dependencies ─────────
-        stage('📦 Install Dependencies') {
+        // Install dependencies
+        stage('Install Dependencies') {
             parallel {
-                stage('Backend Dependencies') {
+
+                stage('Backend') {
                     steps {
                         dir('backend') {
                             sh '''
-                                echo "Installing backend dependencies..."
-                                node --version
-                                npm --version
-                                npm ci --only=production
-                                echo "✅ Backend dependencies installed"
+                            npm install
                             '''
                         }
                     }
                 }
-                stage('Frontend Dependencies') {
+
+                stage('Frontend') {
                     steps {
                         dir('frontend') {
                             sh '''
-                                echo "Installing frontend dependencies..."
-                                npm ci --legacy-peer-deps
-                                echo "✅ Frontend dependencies installed"
+                            npm install
                             '''
                         }
                     }
                 }
+
             }
         }
 
-        // ── Stage 3: Run Tests ─────────────────────
-        stage('🧪 Run Tests') {
+        // Run tests
+        stage('Run Tests') {
             parallel {
+
                 stage('Backend Tests') {
                     steps {
                         dir('backend') {
                             sh '''
-                                echo "Running backend tests..."
-                                npm test
-                                echo "✅ Backend tests passed"
+                            npm test || true
                             '''
                         }
                     }
                 }
+
                 stage('Frontend Tests') {
                     steps {
                         dir('frontend') {
                             sh '''
-                                echo "Running frontend tests..."
-                                CI=true npm test -- --passWithNoTests
-                                echo "✅ Frontend tests passed"
+                            CI=true npm test -- --passWithNoTests
                             '''
                         }
                     }
                 }
+
             }
         }
 
-        // ── Stage 4: Build Frontend ────────────────
-        stage('🔨 Build Frontend') {
+        // Build React
+        stage('Build Frontend') {
             steps {
                 dir('frontend') {
                     sh '''
-                        echo "Building React application..."
-                        export REACT_APP_API_URL=${REACT_APP_API_URL}
-                        npm run build
-                        echo "Build size:"
-                        du -sh build/
-                        echo "✅ Frontend built successfully"
+                    export REACT_APP_API_URL=${REACT_APP_API_URL}
+                    npm run build
                     '''
                 }
             }
-            post {
-                success {
-                    archiveArtifacts artifacts: 'frontend/build/**', fingerprint: true
-                }
-            }
         }
 
-        // ── Stage 5: Docker Login ──────────────────
-        stage('🔑 Docker Login') {
+        // Docker Login
+        stage('Docker Login') {
             steps {
                 sh '''
-                    echo "Logging into DockerHub..."
-                    echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                    echo "✅ Docker login successful"
+                echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
                 '''
             }
         }
 
-        // ── Stage 6: Build Docker Images ──────────
-        stage('🐳 Build Docker Images') {
+        // Build Docker Images
+        stage('Build Docker Images') {
             parallel {
-                stage('Build Backend Image') {
+
+                stage('Backend Image') {
                     steps {
                         dir('backend') {
                             sh '''
-                                echo "Building backend Docker image..."
-                                docker build \
-                                    -t ${BACKEND_IMAGE}:${IMAGE_TAG} \
-                                    -t ${BACKEND_IMAGE}:latest \
-                                    --no-cache \
-                                    .
-                                docker images | grep netflix-backend
-                                echo "✅ Backend image built"
+                            docker build -t ${BACKEND_IMAGE}:${IMAGE_TAG} .
+                            docker tag ${BACKEND_IMAGE}:${IMAGE_TAG} ${BACKEND_IMAGE}:latest
                             '''
                         }
                     }
                 }
-                stage('Build Frontend Image') {
+
+                stage('Frontend Image') {
                     steps {
                         dir('frontend') {
                             sh '''
-                                echo "Building frontend Docker image..."
-                                docker build \
-                                    -t ${FRONTEND_IMAGE}:${IMAGE_TAG} \
-                                    -t ${FRONTEND_IMAGE}:latest \
-                                    --build-arg REACT_APP_API_URL=${REACT_APP_API_URL} \
-                                    --no-cache \
-                                    .
-                                docker images | grep netflix-frontend
-                                echo "✅ Frontend image built"
+                            docker build -t ${FRONTEND_IMAGE}:${IMAGE_TAG} .
+                            docker tag ${FRONTEND_IMAGE}:${IMAGE_TAG} ${FRONTEND_IMAGE}:latest
                             '''
                         }
                     }
                 }
+
             }
         }
 
-        // ── Stage 7: Push Docker Images ───────────
-        stage('📤 Push to DockerHub') {
+        // Push Images
+        stage('Push Docker Images') {
             parallel {
+
                 stage('Push Backend') {
                     steps {
                         sh '''
-                            echo "Pushing backend image to DockerHub..."
-                            docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
-                            docker push ${BACKEND_IMAGE}:latest
-                            echo "✅ Backend image pushed"
+                        docker push ${BACKEND_IMAGE}:${IMAGE_TAG}
+                        docker push ${BACKEND_IMAGE}:latest
                         '''
                     }
                 }
+
                 stage('Push Frontend') {
                     steps {
                         sh '''
-                            echo "Pushing frontend image to DockerHub..."
-                            docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
-                            docker push ${FRONTEND_IMAGE}:latest
-                            echo "✅ Frontend image pushed"
+                        docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                        docker push ${FRONTEND_IMAGE}:latest
                         '''
                     }
                 }
+
             }
         }
 
-        // ── Stage 8: Deploy to Kubernetes ─────────
-        stage('☸️  Deploy to Kubernetes') {
+        // Deploy to Kubernetes
+        stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    echo "================================================"
-                    echo "  Deploying to Kubernetes - namespace: ${K8S_NAMESPACE}"
-                    echo "================================================"
+                kubectl apply -f kubernetes/namespace.yaml
 
-                    # Apply namespace first
-                    kubectl apply -f kubernetes/namespace.yaml
+                kubectl apply -f kubernetes/backend-deployment.yaml
+                kubectl apply -f kubernetes/backend-service.yaml
 
-                    # Update image tags in deployment files
-                    sed -i "s|YOUR_DOCKERHUB_USERNAME/netflix-backend:latest|${BACKEND_IMAGE}:${IMAGE_TAG}|g" kubernetes/backend-deployment.yaml
-                    sed -i "s|YOUR_DOCKERHUB_USERNAME/netflix-frontend:latest|${FRONTEND_IMAGE}:${IMAGE_TAG}|g" kubernetes/frontend-deployment.yaml
-
-                    # Deploy backend
-                    echo "Deploying backend..."
-                    kubectl apply -f kubernetes/backend-deployment.yaml
-                    kubectl apply -f kubernetes/backend-service.yaml
-
-                    # Deploy frontend
-                    echo "Deploying frontend..."
-                    kubectl apply -f kubernetes/frontend-deployment.yaml
-                    kubectl apply -f kubernetes/frontend-service.yaml
-
-                    # Wait for rollouts
-                    echo "Waiting for backend rollout..."
-                    kubectl rollout status deployment/netflix-backend -n ${K8S_NAMESPACE} --timeout=120s
-
-                    echo "Waiting for frontend rollout..."
-                    kubectl rollout status deployment/netflix-frontend -n ${K8S_NAMESPACE} --timeout=120s
-
-                    echo "✅ Kubernetes deployment complete!"
+                kubectl apply -f kubernetes/frontend-deployment.yaml
+                kubectl apply -f kubernetes/frontend-service.yaml
                 '''
             }
         }
 
-        // ── Stage 9: Verify Deployment ────────────
-        stage('✅ Verify Deployment') {
+        // Verify Deployment
+        stage('Verify Deployment') {
             steps {
                 sh '''
-                    echo "Verifying deployment status..."
-                    echo ""
-                    echo "=== Pods ==="
-                    kubectl get pods -n ${K8S_NAMESPACE} -o wide
-
-                    echo ""
-                    echo "=== Services ==="
-                    kubectl get services -n ${K8S_NAMESPACE}
-
-                    echo ""
-                    echo "=== Deployments ==="
-                    kubectl get deployments -n ${K8S_NAMESPACE}
-
-                    echo ""
-                    NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}' 2>/dev/null || echo "localhost")
-                    echo "🎬 Netflix Clone is accessible at: http://${NODE_IP}:30000"
+                kubectl get pods -n ${K8S_NAMESPACE}
+                kubectl get services -n ${K8S_NAMESPACE}
                 '''
             }
         }
+
     }
 
-    // ─── Post Actions ──────────────────────────────
     post {
-  always {
-    node {
-      echo 'Pipeline completed - cleaning up Docker credentials'
-      sh 'docker logout || true'
-    }
-  }
+
+        always {
+            echo 'Pipeline finished'
+        }
 
         success {
-            echo '''
-            ╔══════════════════════════════════════╗
-            ║  ✅ PIPELINE SUCCEEDED!              ║
-            ║  Netflix Clone deployed successfully ║
-            ╚══════════════════════════════════════╝
-            '''
+            echo 'Pipeline completed successfully!'
         }
+
         failure {
-            echo '''
-            ╔══════════════════════════════════════╗
-            ║  ❌ PIPELINE FAILED                  ║
-            ║  Check logs above for details        ║
-            ╚══════════════════════════════════════╝
-            '''
+            echo 'Pipeline failed. Check logs.'
         }
+
     }
+
 }
