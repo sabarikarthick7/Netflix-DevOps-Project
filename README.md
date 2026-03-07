@@ -367,10 +367,6 @@ netflix-frontend-service   NodePort    10.96.123.45    80:30000/TCP   90s
 
 ---
 
-## 📄 License
-
-MIT License — Built as a DevOps learning project.
-
 ---
 
 **Built with ❤️ using React · Node.js · Docker · Kubernetes · Jenkins**
