@@ -1,0 +1,185 @@
+/* ==========================================
+   Netflix Navbar Styles
+   ========================================== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 60px;
+  height: 68px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+  transition: background 0.4s ease;
+}
+
+.navbar--scrolled {
+  background: #141414;
+}
+
+.navbar__left {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.navbar__logo {
+  color: #e50914;
+  font-weight: bold;
+  font-size: 26px;
+  letter-spacing: 2px;
+}
+
+.navbar__logo svg {
+  width: 92px;
+  height: 25px;
+}
+
+.navbar__links {
+  display: flex;
+  list-style: none;
+  gap: 18px;
+}
+
+.navbar__links li a {
+  color: #e5e5e5;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.navbar__links li a:hover,
+.navbar__links li.active a {
+  color: #fff;
+  font-weight: 500;
+}
+
+.navbar__right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.navbar__icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.navbar__kids {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+/* Search */
+.navbar__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  padding: 4px 8px;
+  transition: all 0.3s ease;
+}
+
+.navbar__search--open {
+  border-color: rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.75);
+}
+
+.navbar__search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 14px;
+  width: 200px;
+}
+
+.navbar__search input::placeholder {
+  color: #b3b3b3;
+}
+
+/* Profile */
+.navbar__profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.navbar__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: #e50914;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.navbar__caret {
+  transition: transform 0.2s;
+}
+
+.navbar__profile:hover .navbar__caret {
+  transform: rotate(180deg);
+}
+
+.navbar__dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 200px;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  padding: 8px 0;
+  animation: fadeIn 0.2s ease;
+}
+
+.navbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.navbar__dropdown-item:hover {
+  color: white;
+}
+
+.navbar__dropdown-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 8px 0;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .navbar { padding: 0 24px; }
+  .navbar__links { display: none; }
+}
+
+@media (max-width: 600px) {
+  .navbar { padding: 0 16px; }
+  .navbar__kids { display: none; }
+}

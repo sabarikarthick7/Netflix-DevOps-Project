@@ -1,0 +1,48 @@
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: #141414;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  z-index: 9999;
+  animation: fadeOut 0.5s ease 1.2s forwards;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
+
+.loading-screen__logo {
+  color: #e50914;
+  font-size: 42px;
+  font-weight: bold;
+  letter-spacing: 4px;
+}
+
+@keyframes pulseLogo {
+  from { opacity: 0.7; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.loading-screen__bar {
+  width: 200px;
+  height: 3px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-screen__progress {
+  height: 100%;
+  background: #e50914;
+  border-radius: 2px;
+  animation: loadProgress 1.3s ease forwards;
+}
+
+@keyframes loadProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
