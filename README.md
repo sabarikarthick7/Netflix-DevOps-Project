@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/400px-Netflix_2015_logo.svg.png" alt="Netflix" width="200"/>
 
-  ## DevOps Deployment Project
+ ## Netflix Clone — DevOps CI/CD Deployment
 </div>
 
 A Netflix-style streaming UI deployed with Docker, Kubernetes & Jenkins CI/CD.
