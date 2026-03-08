@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netflix-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: netflix-frontend
+  template:
+    metadata:
+      labels:
+        app: netflix-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: sabarikarthick7/netflix-frontend:latest
+        ports:
+        - containerPort: 3000
